@@ -1,0 +1,1394 @@
+x<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Projekte der Deutschen Stiftung Meeresschutz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  :root {
+    --ocean-deep: #0B2B40;
+    --ocean-mid: #1B4965;
+    --ocean-light: #5FA8D3;
+    --ocean-pale: #A7D4E8;
+    --foam: #E8F4F8;
+    --sand: #F5F0EB;
+    --coral: #E07A5F;
+    --coral-light: #F2A890;
+    --seagrass: #3D8B6E;
+    --text-dark: #0B2B40;
+    --text-body: #2A4A5E;
+    --text-light: #6B8A9E;
+    --white: #FFFFFF;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; font-size: 16px; }
+  body {
+    font-family: 'Outfit', sans-serif;
+    color: var(--text-body);
+    background: var(--foam);
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    max-width: 100vw;
+    line-height: 1.65;
+  }
+  p {
+    text-wrap: pretty;
+    white-space: normal;
+    overflow-wrap: normal;
+    word-break: normal;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'DM Serif Display', serif;
+    color: var(--ocean-deep);
+    text-wrap: balance;
+  }
+
+  /* ============ HERO ============ */
+  .hero {
+    position: relative;
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    background: linear-gradient(165deg, var(--ocean-deep) 0%, var(--ocean-mid) 40%, #2A6F97 70%, var(--ocean-light) 100%);
+    color: var(--white);
+    padding: 2rem 1.5rem;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background:
+      radial-gradient(ellipse at 20% 80%, rgba(95,168,211,0.15) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, rgba(224,122,95,0.08) 0%, transparent 40%);
+    pointer-events: none;
+  }
+  .hero-particles {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .bubble {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.06);
+    animation: float linear infinite;
+    animation-fill-mode: both;
+    opacity: 0;
+    transform: translateY(100vh) scale(0);
+    will-change: transform, opacity;
+  }
+  @keyframes float {
+    0% { transform: translateY(100vh) scale(0); opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { transform: translateY(-20vh) scale(1); opacity: 0; }
+  }
+  .hero-badge {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 100px;
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+    backdrop-filter: blur(4px);
+    background: rgba(255,255,255,0.06);
+    animation: fadeDown 1s ease-out 0.2s both;
+  }
+  .hero h1 {
+    font-size: 2.4rem;
+    color: var(--white);
+    line-height: 1.1;
+    margin-bottom: 1rem;
+    animation: fadeDown 1s ease-out 0.4s both;
+  }
+  .hero h1 em { font-style: italic; color: var(--ocean-pale); }
+  .hero-info-bubble {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: min(84vw, 74rem);
+    max-width: calc(100% - 2.3rem);
+    margin: 2.45rem auto 2.2rem;
+    padding: clamp(0.78rem, 0.52rem + 0.55vw, 1.08rem);
+    border-radius: 46px 62px 52px 58px / 40px 54px 46px 50px;
+    background:
+      radial-gradient(circle at 14% 18%, rgba(255,255,255,0.14) 0 12%, transparent 42%),
+      radial-gradient(circle at 84% 16%, rgba(255,255,255,0.10) 0 10%, transparent 36%),
+      radial-gradient(circle at 24% 82%, rgba(255,255,255,0.07) 0 9%, transparent 34%),
+      linear-gradient(180deg, rgba(255,255,255,0.11), rgba(255,255,255,0.055));
+    border: 1px solid rgba(255,255,255,0.18);
+    backdrop-filter: blur(10px);
+    box-shadow:
+      0 16px 34px rgba(6, 27, 40, 0.18),
+      inset 0 1px 0 rgba(255,255,255,0.09),
+      inset 0 -10px 20px rgba(255,255,255,0.02);
+    outline: 1px solid rgba(255,255,255,0.05);
+    outline-offset: -7px;
+    animation: fadeDown 1s ease-out 0.6s both;
+  }
+  .hero-info-bubble::before,
+  .hero-info-bubble::after {
+    content: '';
+    position: absolute;
+    border-radius: 999px;
+    pointer-events: none;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.05);
+    backdrop-filter: blur(4px);
+  }
+  .hero-info-bubble::before {
+    width: 15px;
+    height: 15px;
+    left: 20px;
+    bottom: -11px;
+    opacity: 0.85;
+    box-shadow:
+      -12px 15px 0 -4px rgba(255,255,255,0.07);
+  }
+  .hero-info-bubble::after {
+    width: 12px;
+    height: 12px;
+    right: 26px;
+    top: -10px;
+    opacity: 0.72;
+    box-shadow:
+      -14px 16px 0 -4px rgba(255,255,255,0.06);
+  }
+  .hero-sub-label {
+    display: flex;
+    width: fit-content;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin: 0 auto 0.7rem;
+    padding: 0.32rem 0.8rem;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.14);
+    color: rgba(255,255,255,0.95);
+    font-size: clamp(0.62rem, 0.58rem + 0.15vw, 0.74rem);
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .hero-sub-label::before,
+  .hero-sub-label::after {
+    content: '';
+    display: block;
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 50%;
+    background: rgba(167,212,232,0.8);
+    box-shadow: 0 0 0 3px rgba(167,212,232,0.12);
+  }
+  .hero-sub {
+    font-size: clamp(0.77rem, 0.65rem + 0.7vw, 1.22rem);
+    font-weight: 400;
+    width: min(100%, 62rem);
+    max-width: 100%;
+    line-height: 1.38;
+    opacity: 1;
+    margin: 0;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.58em;
+    text-wrap: balance;
+    padding: clamp(0.2rem, 0.15rem + 0.3vw, 0.45rem) clamp(0.2rem, 0.18rem + 0.35vw, 0.55rem) clamp(0.35rem, 0.2rem + 0.4vw, 0.7rem);
+  }
+  .hero-sub-line {
+    display: block;
+    max-width: none;
+    margin-left: auto;
+    margin-right: auto;
+    white-space: nowrap;
+  }
+  .sentence-stack {
+    display: flex;
+    flex-direction: column;
+  }
+  .sentence-line {
+    display: block;
+  }
+  .hero-scroll {
+    animation: fadeDown 1s ease-out 0.8s both, bounce 2s ease-in-out 2s infinite;
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.3s;
+    padding: 0.5rem;
+    -webkit-tap-highlight-color: transparent;
+  }
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-25px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(8px); }
+  }
+  .hero-wave {
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 100%;
+    height: 60px;
+  }
+
+  /* ============ SECTIONS SHARED ============ */
+  .section-label {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--coral);
+    margin-bottom: 0.6rem;
+  }
+  .section-desc {
+    font-size: clamp(0.93rem, 0.9rem + 0.2vw, 1rem);
+    line-height: 1.8;
+    color: var(--text-light);
+    margin-bottom: 2.5rem;
+    max-width: min(94vw, 84ch);
+    margin-left: auto;
+    margin-right: auto;
+    text-align: left;
+  }
+  .section-desc.sentence-stack {
+    text-align: center;
+    gap: 0.95em;
+    max-width: min(96vw, 92ch);
+  }
+  .map-tip-highlight {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.34rem 0.78rem;
+    border-radius: 999px;
+    background: rgba(95,168,211,0.12);
+    border: 1px solid rgba(95,168,211,0.28);
+    color: var(--ocean-mid);
+    font-weight: 600;
+    line-height: 1.25;
+    box-shadow: 0 3px 10px rgba(11,43,64,0.05);
+  }
+
+  /* ============ MAP SECTION ============ */
+  .map-section {
+    padding: 3.5rem 1.25rem;
+    background: var(--foam);
+    text-align: center;
+  }
+  .map-section h2 {
+    font-size: 1.8rem;
+    margin-bottom: 0.8rem;
+  }
+  .map-container {
+    background: var(--white);
+    border-radius: 18px;
+    padding: 0.9rem;
+    box-shadow: 0 4px 30px rgba(11,43,64,0.08);
+    border: 1px solid rgba(11,43,64,0.08);
+    margin-bottom: 0.5rem;
+  }
+  .interactive-map {
+    width: 100%;
+    min-height: 280px;
+    height: clamp(280px, 55vw, 500px);
+    border-radius: 12px;
+    overflow: hidden;
+    background: #cfe3ef;
+  }
+  .map-fallback {
+    display: grid;
+    place-items: center;
+    padding: 1rem;
+    color: var(--text-light);
+    font-size: 0.9rem;
+    line-height: 1.6;
+  }
+  .leaflet-container {
+    font-family: 'Outfit', sans-serif;
+  }
+  .map-popup-btn {
+    display: block;
+    margin: 0.55rem auto 0;
+    padding: 0.35rem 0.7rem;
+    border: 1px solid rgba(11,43,64,0.18);
+    border-radius: 999px;
+    background: var(--white);
+    color: var(--ocean-deep);
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.74rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .map-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: center;
+    margin-top: 1.25rem;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.78rem;
+    color: var(--text-light);
+    cursor: pointer;
+    padding: 0.5rem 0.75rem;
+    border-radius: 100px;
+    border: 1px solid rgba(11,43,64,0.08);
+    background: var(--white);
+    -webkit-tap-highlight-color: transparent;
+    transition: all 0.2s;
+    font-family: inherit;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+  .legend-item:hover,
+  .legend-item:focus-visible,
+  .legend-item.is-active,
+  .legend-item:active {
+    background: var(--foam);
+    border-color: var(--ocean-light);
+    color: var(--ocean-mid);
+    outline: none;
+  }
+  .legend-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--coral);
+  }
+
+  /* ============ PROJECTS ============ */
+  .projects-section { padding: 3rem 1.25rem 2rem; }
+  .projects-header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+  }
+  .projects-header h2 {
+    font-size: 1.8rem;
+    margin-bottom: 0.8rem;
+  }
+  .projects-header p {
+    font-size: clamp(0.93rem, 0.9rem + 0.2vw, 1rem);
+    line-height: 1.8;
+    color: var(--text-light);
+    max-width: min(94vw, 84ch);
+    margin: 0 auto;
+    text-align: left;
+  }
+  .projects-header p.sentence-stack {
+    text-align: center;
+    gap: 0.95em;
+    max-width: min(96vw, 92ch);
+  }
+
+  .project-card {
+    margin-bottom: 2rem;
+    background: var(--white);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 2px 24px rgba(11,43,64,0.05);
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+    border: 1px solid rgba(11,43,64,0.07);
+  }
+  .project-card.visible { opacity: 1; transform: translateY(0); }
+
+  .project-visual {
+    position: relative;
+    height: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .project-visual-bg {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 4rem;
+    opacity: 0.15;
+  }
+  .project-visual .project-icon-large {
+    font-size: 4.5rem;
+    position: relative;
+    z-index: 1;
+    filter: drop-shadow(0 4px 12px rgba(0,0,0,0.1));
+  }
+  .pv-1 { background: linear-gradient(135deg, #1B4965, #2A6F97); }
+  .pv-2 { background: linear-gradient(135deg, #2A6F97, #5FA8D3); }
+  .pv-3 { background: linear-gradient(135deg, #E07A5F, #F2A890); }
+  .pv-4 { background: linear-gradient(135deg, #3D8B6E, #5FB89A); }
+  .pv-5 { background: linear-gradient(135deg, #E07A5F, #D4533B); }
+  .pv-6 { background: linear-gradient(135deg, #1B4965, #3D8B6E); }
+
+  .project-content {
+    padding: 1.5rem 1.25rem 1.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+  .project-number {
+    font-family: 'DM Serif Display', serif;
+    font-size: 0.8rem;
+    color: var(--coral);
+    letter-spacing: 0.05em;
+    margin-bottom: 0.35rem;
+  }
+  .project-content h3 {
+    font-size: 1.35rem;
+    line-height: 1.25;
+    margin-bottom: 0;
+  }
+  .project-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin-bottom: 0;
+  }
+  .meta-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.3rem 0.6rem;
+    border-radius: 100px;
+    font-size: 0.72rem;
+    font-weight: 500;
+  }
+  .meta-location { background: rgba(95,168,211,0.12); color: var(--ocean-mid); }
+  .meta-partner { background: rgba(61,139,110,0.1); color: var(--seagrass); }
+  .meta-time { background: rgba(224,122,95,0.1); color: var(--coral); }
+
+  .project-text {
+    font-size: clamp(0.94rem, 0.91rem + 0.2vw, 1rem);
+    line-height: 1.82;
+    color: var(--text-body);
+    margin-bottom: 0;
+    max-width: none;
+    hyphens: none;
+    -webkit-hyphens: none;
+    overflow-wrap: normal;
+    word-break: normal;
+    text-align: left;
+  }
+  .project-text.sentence-stack {
+    gap: 0.8em;
+  }
+
+  .project-infobox {
+    background: var(--foam);
+    border-radius: 12px;
+    padding: 1rem 1.1rem;
+    border-left: 3px solid var(--ocean-light);
+    margin-top: 0.15rem;
+  }
+  .infobox-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ocean-mid);
+    margin-bottom: 0.5rem;
+  }
+  .infobox-grid {
+    /* NEU: Echtes 2-Spalten-Grid für die Infoboxen */
+    display: grid;
+    grid-template-columns: minmax(120px, 155px) 1fr;
+    gap: 0.52rem 0.9rem;
+    font-size: 0.86rem;
+    align-items: baseline;
+  }
+  .infobox-label {
+    color: var(--text-light);
+    font-weight: 600;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-top: 0; /* Margin entfernt, das Grid übernimmt nun den Abstand */
+  }
+  .infobox-value {
+    color: var(--text-dark);
+    line-height: 1.55;
+  }
+
+  /* ============ PATTERN SECTION ============ */
+  .pattern-section {
+    padding: 3.5rem 1.25rem;
+    background: var(--ocean-deep);
+    color: var(--white);
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .pattern-section::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(ellipse at 50% 0%, rgba(95,168,211,0.1) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .pattern-section .section-label { color: var(--coral-light); }
+  .pattern-section h2 {
+    font-size: 1.8rem;
+    color: var(--white);
+    margin-bottom: 0.8rem;
+  }
+  .pattern-section .section-desc { color: var(--ocean-pale); }
+
+  .pattern-flow {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-width: 400px;
+    margin: 0 auto;
+  }
+  .pattern-step {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px;
+    padding: 1.5rem 1.25rem;
+    backdrop-filter: blur(8px);
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+  .pattern-step.visible { opacity: 1; transform: translateY(0); }
+  .step-number {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    background: var(--coral);
+    color: var(--white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.85rem;
+    margin: 0 auto 0.75rem;
+  }
+  .pattern-step h4 {
+    color: var(--white);
+    font-size: 1.1rem;
+    margin-bottom: 0.4rem;
+  }
+  .pattern-step p {
+    font-size: 0.92rem;
+    line-height: 1.75;
+    color: var(--ocean-pale);
+  }
+  .pattern-arrow {
+    color: var(--ocean-light);
+    font-size: 1.2rem;
+    opacity: 0.4;
+    transform: rotate(90deg);
+    text-align: center;
+  }
+
+  /* ============ TIMELINE ============ */
+  .timeline-section {
+    padding: 3.5rem 1.25rem;
+    background: var(--sand);
+    text-align: center;
+  }
+  .timeline-section h2 {
+    font-size: 1.8rem;
+    margin-bottom: 0.8rem;
+  }
+  .timeline {
+    max-width: 500px;
+    margin: 0 auto;
+    position: relative;
+    padding-left: 2.5rem;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 0.6rem;
+    top: 0; bottom: 0;
+    width: 2px;
+    background: linear-gradient(to bottom, var(--ocean-light), var(--coral));
+    border-radius: 2px;
+  }
+  .timeline-year {
+    position: relative;
+    margin-bottom: 2rem;
+    text-align: left;
+    opacity: 0;
+    transform: translateX(-15px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+  .timeline-year.visible { opacity: 1; transform: translateX(0); }
+  .timeline-year::before {
+    content: '';
+    position: absolute;
+    left: -2.2rem;
+    top: 0.25rem;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: var(--coral);
+    border: 3px solid var(--sand);
+    box-shadow: 0 0 0 2px var(--coral);
+  }
+  .timeline-year-label {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.3rem;
+    color: var(--ocean-deep);
+    margin-bottom: 0.4rem;
+  }
+  .timeline-items { display: flex; flex-direction: column; gap: 0.35rem; }
+  .timeline-item {
+    background: var(--white);
+    padding: 0.82rem 1rem;
+    border-radius: 10px;
+    font-size: 0.92rem;
+    color: var(--text-body);
+    box-shadow: 0 2px 10px rgba(11,43,64,0.04);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    line-height: 1.65;
+  }
+  .timeline-item-dot {
+    width: 6px; height: 6px; min-width: 6px;
+    border-radius: 50%;
+    background: var(--ocean-light);
+  }
+
+  /* ============ FOOTER ============ */
+  .site-footer {
+    background: var(--ocean-deep);
+    color: var(--ocean-pale);
+    padding: 2.5rem 1.25rem;
+    text-align: center;
+  }
+  .footer-inner { max-width: 700px; margin: 0 auto; }
+  .footer-note {
+    font-size: clamp(0.88rem, 0.85rem + 0.2vw, 0.92rem);
+    line-height: 1.75;
+    margin-bottom: 1.25rem;
+    max-width: min(94vw, 84ch);
+    text-align: left;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .footer-link {
+    color: var(--ocean-light);
+    text-decoration: none;
+    border-bottom: 1px solid rgba(95,168,211,0.3);
+    transition: border-color 0.3s;
+  }
+  .sources-toggle {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: var(--ocean-pale);
+    padding: 0.7rem 1.4rem;
+    border-radius: 100px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    margin-bottom: 1rem;
+    display: inline-block;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .sources-toggle:active { background: rgba(255,255,255,0.12); }
+  .sources-list {
+    display: none;
+    text-align: left;
+    margin-top: 1rem;
+    padding: 1rem;
+    background: rgba(255,255,255,0.03);
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .sources-list.open { display: block; }
+  .sources-list li {
+    font-size: 0.75rem;
+    margin-bottom: 0.5rem;
+    word-break: break-all;
+    list-style: none;
+    padding-left: 1rem;
+    position: relative;
+    color: var(--text-light);
+    line-height: 1.5;
+  }
+  .sources-list li::before {
+    content: '\2192';
+    position: absolute;
+    left: 0;
+    color: var(--coral);
+  }
+  .sources-list a {
+    color: var(--ocean-pale);
+    text-decoration: none;
+    border-bottom: 1px solid rgba(167,212,232,0.2);
+  }
+  .footer-copy {
+    margin-top: 1.5rem;
+    font-size: 0.72rem;
+    color: var(--text-light);
+  }
+
+  /* ============ NEU: LARGE SCREENS (Desktop-Optimierung) ============ */
+  @media (max-width: 767px) {
+    body { padding: 0.35rem; }
+    .hero-sub {
+      font-size: clamp(0.76rem, 0.72rem + 0.32vw, 0.86rem);
+      line-height: 1.4;
+      gap: 0.48em;
+      width: 100%;
+      max-width: 100%;
+      padding: 0.2rem 0.15rem 0.35rem;
+    }
+    .hero-sub-line { max-width: none; }
+    .hero-info-bubble {
+      width: min(92vw, 42rem);
+      max-width: calc(100% - 0.95rem);
+      margin-top: 1.9rem;
+      margin-bottom: 2rem;
+      padding: 0.65rem 0.55rem 0.75rem;
+      border-radius: 26px 34px 28px 36px / 24px 30px 28px 26px;
+      outline-offset: -5px;
+    }
+    .hero-info-bubble::before {
+      width: 13px;
+      height: 13px;
+      left: 14px;
+      bottom: -10px;
+    }
+    .hero-info-bubble::after {
+      width: 9px;
+      height: 9px;
+      right: 16px;
+      top: -8px;
+    }
+    .hero-sub-label {
+      margin-bottom: 0.55rem;
+      padding: 0.28rem 0.65rem;
+    }
+    .map-tip-highlight {
+      padding: 0.28rem 0.62rem;
+      font-size: 0.88em;
+    }
+    .section-desc.sentence-stack,
+    .projects-header p.sentence-stack {
+      gap: 0.8em;
+    }
+    .project-text.sentence-stack {
+      gap: 0.62em;
+    }
+    .interactive-map {
+      min-height: 240px;
+      height: clamp(240px, 62vw, 360px);
+    }
+    .hero,
+    .map-section,
+    .projects-section,
+    .pattern-section,
+    .timeline-section,
+    .site-footer {
+      border-radius: 16px;
+    }
+    .project-content {
+      padding: 1.2rem 1rem 1.4rem;
+      gap: 0.72rem;
+    }
+    .project-text { font-size: 0.9rem; line-height: 1.78; }
+    .infobox-grid {
+      grid-template-columns: 1fr;
+      gap: 0.32rem;
+    }
+    .infobox-label { margin-top: 0.3rem; }
+  }
+
+  @media (min-width: 768px) {
+    /* Breite deutlich erhöht, damit das Layout atmen kann */
+    body { max-width: 1080px; margin: 0 auto; padding: 0 0.9rem 1rem; }
+
+    .project-content {
+      padding: 1.55rem 1.55rem 1.8rem;
+      gap: 0.9rem;
+    }
+    
+    /* Querschnittsanalyse-Muster horizontal anordnen */
+    .pattern-flow {
+      flex-direction: row;
+      max-width: 100%;
+      justify-content: center;
+    }
+    .pattern-arrow {
+      transform: rotate(0deg); /* Pfeile zeigen nach rechts statt nach unten */
+      display: flex;
+      align-items: center;
+      padding: 0 1rem;
+    }
+  }
+
+  @media (min-width: 1100px) {
+    .project-card {
+      display: grid;
+      grid-template-columns: minmax(210px, 240px) minmax(0, 1fr);
+      align-items: stretch;
+    }
+    .project-visual {
+      height: 100%;
+    }
+    .project-content {
+      padding: 1.75rem 1.8rem 1.95rem;
+    }
+  }
+</style>
+</head>
+<body>
+
+<section class="hero" id="top">
+  <div class="hero-particles" id="particles"></div>
+  <div class="hero-badge">Deutsche Stiftung Meeresschutz</div>
+  <h1>Globaler Einsatz<br>für die <em>Meere</em></h1>
+  <div class="hero-info-bubble" aria-label="Kurzinfo zur Deutschen Stiftung Meeresschutz">
+    <div class="hero-sub-label">Über die DSM</div>
+    <p class="hero-sub">
+      <span class="hero-sub-line">Die Deutsche Stiftung Meeresschutz (DSM) wurde 2007 als gemeinnützige Stiftung gegründet.</span>
+      <span class="hero-sub-line">Sie fördert weltweit Projekte, die den Schutz von Meeren und ihren Bewohnern zum Ziel haben.</span>
+      <span class="hero-sub-line">Die Stiftung finanziert sich fast vollständig durch Spenden (zzgl. geringfügiger Geldauflagen).</span>
+    </p>
+  </div>
+  <a href="#karte" class="hero-scroll">
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 5v14M5 12l7 7 7-7"/>
+    </svg>
+  </a>
+  <svg class="hero-wave" viewBox="0 0 1440 80" preserveAspectRatio="none">
+    <path d="M0,40 C360,80 720,0 1080,40 C1260,60 1380,50 1440,40 L1440,80 L0,80 Z" fill="var(--foam)"/>
+  </svg>
+</section>
+
+<section class="map-section" id="karte">
+  <span class="section-label">Weltweit aktiv</span>
+  <h2>6 Projekte weltweit</h2>
+  <p class="section-desc sentence-stack">
+    <span class="sentence-line">Die Stiftung ist dort aktiv, wo Meereslebensräume besonders bedroht sind: von der kroatischen Adria über die Kapverden bis zu den Fidschi-Inseln im Pazifik.</span>
+    <span class="sentence-line"><span class="map-tip-highlight">Tippe auf einen Punkt, um mehr zu erfahren.</span></span>
+  </p>
+  <div class="map-container">
+    <div id="world-map" class="interactive-map" aria-label="Interaktive Weltkarte mit Projektstandorten"></div>
+    <noscript>
+      <p class="map-fallback">Die interaktive Karte benötigt JavaScript. Nutze die Projektbuttons darunter.</p>
+    </noscript>
+  </div>
+  <div class="map-legend">
+    <button class="legend-item" type="button" data-project-id="kvarner"><span class="legend-dot"></span> Kvarner Bucht</button>
+    <button class="legend-item" type="button" data-project-id="manaia"><span class="legend-dot"></span> Project Manaia</button>
+    <button class="legend-item" type="button" data-project-id="boa-vista"><span class="legend-dot"></span> Boa Vista</button>
+    <button class="legend-item" type="button" data-project-id="israel"><span class="legend-dot"></span> Mönchsrobben</button>
+    <button class="legend-item" type="button" data-project-id="banda"><span class="legend-dot"></span> Bandasee</button>
+    <button class="legend-item" type="button" data-project-id="fidschi"><span class="legend-dot"></span> Fidschi</button>
+  </div>
+</section>
+
+<section class="projects-section" id="projekte">
+  <div class="projects-header">
+    <span class="section-label">Projektübersicht</span>
+    <h2>Sechs Projekte, ein Ziel</h2>
+    <p class="sentence-stack js-sentence-stack">Jedes Projekt der DSM verbindet wissenschaftliche Forschung mit praktischem Schutz und arbeitet dabei eng mit Partnern vor Ort zusammen.</p>
+  </div>
+
+  <div class="project-card" id="kvarner">
+    <div class="project-visual pv-1">
+      <div class="project-visual-bg">🌊</div>
+      <span class="project-icon-large">🐬</span>
+    </div>
+    <div class="project-content">
+      <div class="project-number">Projekt 01</div>
+      <h3>Meeresschutzgebiet Kvarner Bucht</h3>
+      <div class="project-meta">
+        <span class="meta-tag meta-location">📍 Nordadria, Kroatien</span>
+        <span class="meta-tag meta-partner">🤝 MareMundi</span>
+        <span class="meta-tag meta-time">📅 Seit 2024</span>
+      </div>
+      <p class="project-text sentence-stack js-sentence-stack">
+        Zwischen den kroatischen Inseln Cres und Krk soll ein großes Meeresschutzgebiet von rund 952 km² entstehen. In diesem Gebiet sind zwei sogenannte No-Take-Zonen geplant, also Bereiche, in denen keinerlei Fischfang erlaubt ist: der Gurgurov-Kanal (71 km²) und der Krušija-Kanal (25 km²). Um die Einrichtung wissenschaftlich zu begründen, wird die Artenvielfalt erfasst, der Zustand der Seegraswiesen mit standardisierten Methoden untersucht und die Unterwasserwelt mit Hydrophonen (Unterwassermikrofonen) akustisch überwacht. Die Projektstation befindet sich in Punat auf der Insel Krk.
+      </p>
+      <div class="project-infobox">
+        <div class="infobox-title">Steckbrief</div>
+        <div class="infobox-grid">
+          <span class="infobox-label">Ökosystem</span>
+          <span class="infobox-value">Posidonia-Seegraswiesen und marine Megafauna</span>
+          <span class="infobox-label">Methoden</span>
+          <span class="infobox-value">Hydrophone, LIT-Transekte, Zählrahmen, Clean-ups</span>
+          <span class="infobox-label">Station</span>
+          <span class="infobox-value">Punat auf der Insel Krk</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="project-card" id="manaia">
+    <div class="project-visual pv-2">
+      <div class="project-visual-bg">🌿</div>
+      <span class="project-icon-large">⛵</span>
+    </div>
+    <div class="project-content">
+      <div class="project-number">Projekt 02</div>
+      <h3>Meeresschutz im Mittelmeer mit Project Manaia</h3>
+      <div class="project-meta">
+        <span class="meta-tag meta-location">📍 Mittelmeer (IT, GR, MT)</span>
+        <span class="meta-tag meta-partner">🤝 Project Manaia</span>
+        <span class="meta-tag meta-time">📅 Seit 2022</span>
+      </div>
+      <p class="project-text sentence-stack js-sentence-stack">
+        Dieses Projekt operiert vom Forschungsschiff SY Waya Waya aus und verbindet mehrere Schutzmaßnahmen miteinander. Dazu gehören die Renaturierung von Seegraswiesen, das Entfernen von Müll aus dem Meer (Clean-ups) und die systematische Erfassung der Artenvielfalt unter dem Titel „Seascaping the Med". Außerdem werden invasive Arten untersucht, die das Ökosystem bedrohen. Über einen Citizen-Science-Ansatz werden an verschiedenen Standorten lokale „Meeresgärtner"-Stationen aufgebaut, an denen Freiwillige mitarbeiten können. Das Projekt wird zusätzlich von der ClimaClic-Initiative und der Gert-Riedel-Stiftung unterstützt.
+      </p>
+      <div class="project-infobox">
+        <div class="infobox-title">Steckbrief</div>
+        <div class="infobox-grid">
+          <span class="infobox-label">Ökosystem</span>
+          <span class="infobox-value">Seegraswiesen und Küstenökosysteme</span>
+          <span class="infobox-label">Methoden</span>
+          <span class="infobox-value">Renaturierung, Clean-ups, Citizen Science, Transekte</span>
+          <span class="infobox-label">Besonderheit</span>
+          <span class="infobox-value">Mobiles Forschungsschiff SY Waya Waya</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="project-card" id="boa-vista">
+    <div class="project-visual pv-3">
+      <div class="project-visual-bg">🏖️</div>
+      <span class="project-icon-large">🐢</span>
+    </div>
+    <div class="project-content">
+      <div class="project-number">Projekt 03</div>
+      <h3>Schildkrötenschutz auf Boa Vista</h3>
+      <div class="project-meta">
+        <span class="meta-tag meta-location">📍 Kapverden, Boa Vista</span>
+        <span class="meta-tag meta-partner">🤝 Turtle Foundation</span>
+        <span class="meta-tag meta-time">📅 Seit Sept. 2022</span>
+      </div>
+      <p class="project-text sentence-stack js-sentence-stack">
+        Auf der kapverdischen Insel Boa Vista nisten Unechte Karettschildkröten (Caretta caretta), die dort durch Wilderei bedroht sind. In der Nistsaison von Juni bis Oktober patrouillieren einheimische Ranger und Freiwillige über rund 30 der insgesamt 65 km Niststrand. Dabei setzen sie moderne Technik ein: Nachtsichtdrohnen, Wärmebild-Ferngläser und speziell ausgebildete Artenschutzhunde. Die Arbeit wird durch Umweltbildung und die Zusammenarbeit mit der lokalen Polizei unterstützt. Der Erfolg wird über konkrete Zahlen gemessen, zum Beispiel die Wilderei-Quote und die Anzahl geschlüpfter Jungtiere.
+      </p>
+      <div class="project-infobox">
+        <div class="infobox-title">Steckbrief</div>
+        <div class="infobox-grid">
+          <span class="infobox-label">Zielart</span>
+          <span class="infobox-value">Unechte Karettschildkröte (Caretta caretta)</span>
+          <span class="infobox-label">Methoden</span>
+          <span class="infobox-value">Nachtsichtdrohnen, Wärmebildkameras, Artenschutzhunde</span>
+          <span class="infobox-label">Kennzahlen</span>
+          <span class="infobox-value">Wilderei-Quote, Schlupf- und Rettungszahlen</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="project-card" id="israel">
+    <div class="project-visual pv-4">
+      <div class="project-visual-bg">🪨</div>
+      <span class="project-icon-large">🦭</span>
+    </div>
+    <div class="project-content">
+      <div class="project-number">Projekt 04</div>
+      <h3>Rückkehr der Mittelmeer-Mönchsrobben</h3>
+      <div class="project-meta">
+        <span class="meta-tag meta-location">📍 Israel, Mittelmeerküste</span>
+        <span class="meta-tag meta-partner">🤝 Delphis (Ashdod)</span>
+        <span class="meta-tag meta-time">📅 Seit Aug. 2023</span>
+      </div>
+      <p class="project-text sentence-stack js-sentence-stack">
+        Die Mittelmeer-Mönchsrobbe (Monachus monachus) ist eine der seltensten Robbenarten der Welt. An der israelischen Küste wird daran gearbeitet, ihren Lebensraum wiederherzustellen. Dazu werden natürliche Meereshöhlen restauriert und neue Grotten gebaut, die den Robben als Rückzugs- und Fortpflanzungsorte dienen. Ein Schwerpunkt liegt auf dem Meeresschutzgebiet Rosh HaNikra an der Grenze zum Libanon. Überwachungskameras dokumentieren, ob die Tiere die Höhlen annehmen. Im „Dolphin & Sea Center" in Ashdod werden Lehrkräfte, Schulkinder und Vorschulkinder für das Thema Meeresschutz sensibilisiert.
+      </p>
+      <div class="project-infobox">
+        <div class="infobox-title">Steckbrief</div>
+        <div class="infobox-grid">
+          <span class="infobox-label">Zielart</span>
+          <span class="infobox-value">Mittelmeer-Mönchsrobbe (Monachus monachus)</span>
+          <span class="infobox-label">Methoden</span>
+          <span class="infobox-value">Höhlenrestaurierung, Kamera-Monitoring, Bildungsprogramme</span>
+          <span class="infobox-label">Fachberatung</span>
+          <span class="infobox-value">Harris Nicolaou und zypriotische Wissenschaftler</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="project-card" id="banda">
+    <div class="project-visual pv-5">
+      <div class="project-visual-bg">🧬</div>
+      <span class="project-icon-large">🪸</span>
+    </div>
+    <div class="project-content">
+      <div class="project-number">Projekt 05</div>
+      <h3>Korallenrestauration in der Bandasee</h3>
+      <div class="project-meta">
+        <span class="meta-tag meta-location">📍 Banda-Inseln, Indonesien</span>
+        <span class="meta-tag meta-partner">🤝 BandaSEA &amp; Luminocean</span>
+        <span class="meta-tag meta-time">📅 2022 bis 2025</span>
+      </div>
+      <p class="project-text sentence-stack js-sentence-stack">
+        Vor der Insel Hatta in der indonesischen Bandasee werden geschädigte Korallenriffe mit einer besonders schonenden Methode wiederhergestellt. Während der natürlichen Laichzeit der Korallen werden deren Keimzellen (Gameten) mit einfachen Mitteln wie Trichtern und PET-Flaschen gesammelt. Die daraus entstehenden Larven werden in Tanks aufgezogen und anschließend in markierten Parzellen (3 × 5 Meter) auf dem Meeresboden ausgebracht. Schutznetze aus Organza-Stoff dienen als temporäres Schutzdach. Das langfristige Ziel ist ein Leitfaden, der zeigt, wie Korallenrestauration kostengünstig und ohne teure Ausrüstung vor Ort umgesetzt werden kann.
+      </p>
+      <div class="project-infobox">
+        <div class="infobox-title">Steckbrief</div>
+        <div class="infobox-grid">
+          <span class="infobox-label">Ökosystem</span>
+          <span class="infobox-value">Korallenriffe</span>
+          <span class="infobox-label">Methoden</span>
+          <span class="infobox-value">Gameten-Sammlung, Larvenaufzucht, Parzellen-Monitoring</span>
+          <span class="infobox-label">Durchführung</span>
+          <span class="infobox-value">Studierende der Hatta-Sjahrir Fisheries School</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="project-card" id="fidschi">
+    <div class="project-visual pv-6">
+      <div class="project-visual-bg">🔬</div>
+      <span class="project-icon-large">🦈</span>
+    </div>
+    <div class="project-content">
+      <div class="project-number">Projekt 06</div>
+      <h3>Seltene Rochen der Fidschi-Inseln</h3>
+      <div class="project-meta">
+        <span class="meta-tag meta-location">📍 Fidschi (Viti Levu, Drawaqa)</span>
+        <span class="meta-tag meta-partner">🤝 Dr. Kerstin Glaus</span>
+        <span class="meta-tag meta-time">📅 Seit 2024</span>
+      </div>
+      <p class="project-text sentence-stack js-sentence-stack">
+        In den Küstengewässern von Fidschi werden seltene und bisher unbekannte Rochenarten erforscht. Die Untersuchungsgebiete liegen in der Natadola-Bucht auf der Hauptinsel Viti Levu und bei der Insel Drawaqa in der Yasawa-Gruppe. Die Forschung kombiniert mehrere Ansätze: beköderte Unterwasserkameras (sogenannte BRUVS), körperliche Vermessung von Rochen auf Fischmärkten und die Analyse von Umwelt-DNA (eDNA) im Meerwasser. Zusätzlich werden Umweltdaten wie pH-Wert, Salzgehalt und Wassertemperatur erfasst. Ein zentraler Erfolg des Projekts ist die Entdeckung und wissenschaftliche Erstbeschreibung einer bisher unbekannten, endemischen Rochenart. Diese Beschreibung kann als Grundlage für einen künftigen gesetzlichen Schutz dienen.
+      </p>
+      <div class="project-infobox">
+        <div class="infobox-title">Steckbrief</div>
+        <div class="infobox-grid">
+          <span class="infobox-label">Zielarten</span>
+          <span class="infobox-value">Rochen (seltene und endemische Arten)</span>
+          <span class="infobox-label">Methoden</span>
+          <span class="infobox-value">BRUVS, eDNA-Analysen, morphologische Studien</span>
+          <span class="infobox-label">Kooperation</span>
+          <span class="infobox-value">Drawaqa Marine Conservation Trust und USP Suva</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="pattern-section" id="muster">
+  <span class="section-label">Querschnittsanalyse</span>
+  <h2>Was alle Projekte verbindet</h2>
+  <p class="section-desc sentence-stack js-sentence-stack">
+    Obwohl die sechs Projekte in unterschiedlichen Regionen und Ökosystemen arbeiten, folgen sie alle einem gemeinsamen Dreischritt.
+  </p>
+  <div class="pattern-flow">
+    <div class="pattern-step" id="step-1">
+      <div class="step-number">1</div>
+      <h4>Daten und Monitoring</h4>
+      <p>Zuerst wird eine wissenschaftliche Grundlage geschaffen: durch Unterwasserkameras, Hydrophone, DNA-Analysen oder Kameraüberwachung.</p>
+    </div>
+    <div class="pattern-arrow">→</div>
+    <div class="pattern-step" id="step-2">
+      <div class="step-number">2</div>
+      <h4>Schutzmaßnahmen</h4>
+      <p>Auf Basis der Daten werden konkrete Maßnahmen umgesetzt: Schutzgebiete einrichten, Lebensräume renaturieren oder Wilderei bekämpfen.</p>
+    </div>
+    <div class="pattern-arrow">→</div>
+    <div class="pattern-step" id="step-3">
+      <div class="step-number">3</div>
+      <h4>Lokale Einbindung</h4>
+      <p>Alle Projekte beziehen die Menschen vor Ort ein, zum Beispiel durch Citizen Science, Bildungsprogramme oder die Ausbildung lokaler Ranger.</p>
+    </div>
+  </div>
+</section>
+
+<section class="timeline-section" id="zeitstrahl">
+  <span class="section-label">Chronologie</span>
+  <h2>Projektstarts im Überblick</h2>
+  <p class="section-desc sentence-stack js-sentence-stack">
+    Seit 2022 hat die Deutsche Stiftung Meeresschutz sechs Projekte gestartet oder begonnen zu fördern.
+  </p>
+  <div class="timeline">
+    <div class="timeline-year" id="tl-2022">
+      <div class="timeline-year-label">2022</div>
+      <div class="timeline-items">
+        <div class="timeline-item"><span class="timeline-item-dot"></span> Project Manaia: Meeresschutz im Mittelmeer</div>
+        <div class="timeline-item"><span class="timeline-item-dot"></span> Schildkrötenschutz auf Boa Vista (ab September)</div>
+        <div class="timeline-item"><span class="timeline-item-dot"></span> Korallenrestauration in der Bandasee (bis 2025)</div>
+      </div>
+    </div>
+    <div class="timeline-year" id="tl-2023">
+      <div class="timeline-year-label">2023</div>
+      <div class="timeline-items">
+        <div class="timeline-item"><span class="timeline-item-dot"></span> Mönchsrobben-Projekt in Israel (ab August)</div>
+      </div>
+    </div>
+    <div class="timeline-year" id="tl-2024">
+      <div class="timeline-year-label">2024</div>
+      <div class="timeline-items">
+        <div class="timeline-item"><span class="timeline-item-dot"></span> Meeresschutzgebiet in der Kvarner Bucht</div>
+        <div class="timeline-item"><span class="timeline-item-dot"></span> Rochenprojekt auf den Fidschi-Inseln</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <p class="footer-note">
+      Ein Projekt im Rahmen des Schulunterrichts.<br>
+      Alle Informationen basieren auf der offiziellen Website der Deutschen Stiftung Meeresschutz:<br>
+      <a href="https://www.stiftung-meeresschutz.org" target="_blank" class="footer-link">stiftung-meeresschutz.org</a>
+    </p>
+    <button class="sources-toggle" onclick="toggleSources()">Quellenverzeichnis anzeigen</button>
+    <ul class="sources-list" id="sources">
+      <li><a href="https://www.stiftung-meeresschutz.org/foerderung/adria-mittelmeer/fuer-ein-meeresschutzgebiet-in-der-kvarner-bucht/" target="_blank">Meeresschutzgebiet Kvarner Bucht</a></li>
+      <li><a href="https://www.stiftung-meeresschutz.org/foerderung/adria-mittelmeer/seegraswiesen-ocean-cleanup-citizen-science-mit-project-manaia/" target="_blank">Project Manaia (Mittelmeer)</a></li>
+      <li><a href="https://www.stiftung-meeresschutz.org/projekte/meeresschildkroeten/meeresschildkroeten-schutzprojekt-auf-boa-vista/" target="_blank">Schildkrötenschutz auf Boa Vista</a></li>
+      <li><a href="https://www.stiftung-meeresschutz.org/projekte/meeressaeuger/projekt-fuer-moenchsrobben-in-israel/" target="_blank">Mönchsrobben in Israel</a></li>
+      <li><a href="https://www.stiftung-meeresschutz.org/projekte/korallenriffe/korallenrestauration-in-der-bandasee/" target="_blank">Korallenrestauration in der Bandasee</a></li>
+      <li><a href="https://www.stiftung-meeresschutz.org/projekte/rochen/seltene-und-unbekannte-rochen-der-fidschi-inseln/" target="_blank">Rochen der Fidschi-Inseln</a></li>
+      <li><a href="https://www.stiftung-meeresschutz.org/leitbild/" target="_blank">DSM Ueber uns / Leitbild (Mission & Stiftung)</a></li>
+      <li><a href="https://www.stiftung-meeresschutz.org/wp-content/uploads/pdf/jahresrueckblick-2024-deutsche-stiftung-meeresschutz_doppelseitig.pdf" target="_blank">Jahresrückblick 2024 der DSM (PDF)</a></li>
+    </ul>
+    <p class="footer-copy">© 2025 · Schulprojekt · Recherche basierend auf stiftung-meeresschutz.org</p>
+  </div>
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  (function() {
+    const c = document.getElementById('particles');
+    for (let i = 0; i < 15; i++) {
+      const b = document.createElement('div');
+      b.className = 'bubble';
+      const s = Math.random() * 50 + 15;
+      b.style.width = s + 'px';
+      b.style.height = s + 'px';
+      b.style.left = Math.random() * 100 + '%';
+      b.style.animationDuration = (Math.random() * 15 + 10) + 's';
+      b.style.animationDelay = '-' + (Math.random() * 20).toFixed(2) + 's';
+      c.appendChild(b);
+    }
+  })();
+
+  const projectLocations = [
+    { id: 'kvarner', name: 'Kvarner Bucht', place: 'Nordadria, Kroatien', coords: [45.06, 14.62] },
+    { id: 'manaia', name: 'Project Manaia', place: 'Mittelmeer (IT, GR, MT)', coords: [36.1, 17.6] },
+    { id: 'boa-vista', name: 'Boa Vista', place: 'Kapverden', coords: [16.11, -22.8] },
+    { id: 'israel', name: 'Mönchsrobben-Projekt', place: 'Israel, Mittelmeerküste', coords: [33.09, 35.1] },
+    { id: 'banda', name: 'Bandasee', place: 'Indonesien', coords: [-4.53, 129.9] },
+    { id: 'fidschi', name: 'Fidschi-Inseln', place: 'Viti Levu, Drawaqa', coords: [-17.8, 177.9] }
+  ];
+
+  function initProjectMap() {
+    const mapRoot = document.getElementById('world-map');
+    const legendItems = Array.from(document.querySelectorAll('.legend-item[data-project-id]'));
+    const setLegendState = (activeId) => {
+      legendItems.forEach((item) => item.classList.toggle('is-active', item.dataset.projectId === activeId));
+    };
+
+    if (!mapRoot) return;
+
+    const fallbackLegendOnly = () => {
+      mapRoot.classList.add('map-fallback');
+      mapRoot.textContent = 'Karte konnte nicht geladen werden. Nutze die Projektbuttons darunter.';
+      legendItems.forEach((item) => {
+        item.addEventListener('click', () => {
+          const projectId = item.dataset.projectId;
+          setLegendState(projectId);
+          scrollToProject(projectId);
+        });
+      });
+    };
+
+    if (typeof L === 'undefined') {
+      fallbackLegendOnly();
+      return;
+    }
+
+    const map = L.map(mapRoot, {
+      zoomControl: true,
+      minZoom: 2,
+      maxZoom: 7,
+      worldCopyJump: true
+    }).setView([18, 15], 2);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap-Mitwirkende'
+    }).addTo(map);
+
+    const markerById = new Map();
+    projectLocations.forEach((project) => {
+      const marker = L.circleMarker(project.coords, {
+        radius: 8,
+        color: '#FFFFFF',
+        weight: 2,
+        fillColor: '#E07A5F',
+        fillOpacity: 0.95
+      }).addTo(map);
+
+      marker.bindPopup(
+        `<strong>${project.name}</strong><br>${project.place}<br><button type="button" class="map-popup-btn" data-project-id="${project.id}">Zum Projekt</button>`
+      );
+      marker.on('click', () => setLegendState(project.id));
+      markerById.set(project.id, marker);
+    });
+
+    mapRoot.addEventListener('click', (event) => {
+      const button = event.target.closest('.map-popup-btn');
+      if (!button) return;
+
+      const projectId = button.dataset.projectId;
+      setLegendState(projectId);
+      scrollToProject(projectId);
+    });
+
+    legendItems.forEach((item) => {
+      item.addEventListener('click', () => {
+        const projectId = item.dataset.projectId;
+        const marker = markerById.get(projectId);
+        setLegendState(projectId);
+
+        if (marker) {
+          map.flyTo(marker.getLatLng(), 4, { duration: 0.8 });
+          marker.openPopup();
+        }
+
+        scrollToProject(projectId);
+      });
+    });
+
+    setTimeout(() => map.invalidateSize(), 0);
+  }
+
+  function applySentenceStackLayout() {
+    const targets = document.querySelectorAll('.js-sentence-stack');
+    const sentencePattern = /[^.!?]+(?:[.!?]+(?=\s|$)|$)/g;
+
+    targets.forEach((el) => {
+      if (el.querySelector('.sentence-line')) return;
+
+      const text = el.textContent.replace(/\s+/g, ' ').trim();
+      if (!text) return;
+
+      const parts = text.match(sentencePattern) || [text];
+      el.textContent = '';
+
+      parts
+        .map((part) => part.trim())
+        .filter(Boolean)
+        .forEach((part) => {
+          const line = document.createElement('span');
+          line.className = 'sentence-line';
+          line.textContent = part;
+          el.appendChild(line);
+        });
+      });
+  }
+
+  let heroBubbleFitRaf = null;
+  function fitHeroBubbleText() {
+    const heroSub = document.querySelector('.hero .hero-sub');
+    if (!heroSub) return;
+
+    const lines = heroSub.querySelectorAll('.hero-sub-line');
+    if (!lines.length) return;
+
+    // Reset to CSS value before recalculating
+    heroSub.style.fontSize = '';
+
+    const availableWidth = Math.max(0, heroSub.clientWidth - 4);
+    if (!availableWidth) return;
+
+    let widestLine = 0;
+    lines.forEach((line) => {
+      widestLine = Math.max(widestLine, line.scrollWidth);
+    });
+
+    if (widestLine <= availableWidth) return;
+
+    const currentSize = parseFloat(getComputedStyle(heroSub).fontSize);
+    if (!Number.isFinite(currentSize) || currentSize <= 0) return;
+
+    const scale = Math.max(0.5, Math.min(1, (availableWidth / widestLine) * 0.985));
+    heroSub.style.fontSize = `${(currentSize * scale).toFixed(2)}px`;
+  }
+
+  function scheduleFitHeroBubbleText() {
+    if (heroBubbleFitRaf) cancelAnimationFrame(heroBubbleFitRaf);
+    heroBubbleFitRaf = requestAnimationFrame(() => {
+      heroBubbleFitRaf = null;
+      fitHeroBubbleText();
+    });
+  }
+
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.1, rootMargin: '0px 0px -30px 0px' });
+
+  document.querySelectorAll('.project-card, .pattern-step, .timeline-year').forEach(el => obs.observe(el));
+
+  const po = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        document.querySelectorAll('.pattern-step').forEach((s, i) => {
+          setTimeout(() => s.classList.add('visible'), i * 200);
+        });
+        po.disconnect();
+      }
+    });
+  }, { threshold: 0.2 });
+  const pf = document.querySelector('.pattern-flow');
+  if (pf) po.observe(pf);
+
+  function scrollToProject(id) {
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      el.style.boxShadow = '0 0 0 3px var(--coral), 0 2px 24px rgba(11,43,64,0.08)';
+      setTimeout(() => { el.style.boxShadow = '0 2px 24px rgba(11,43,64,0.05)'; }, 2000);
+    }
+  }
+
+  function toggleSources() {
+    const l = document.getElementById('sources');
+    const b = document.querySelector('.sources-toggle');
+    l.classList.toggle('open');
+    b.textContent = l.classList.contains('open') ? 'Quellenverzeichnis ausblenden' : 'Quellenverzeichnis anzeigen';
+  }
+
+  applySentenceStackLayout();
+  scheduleFitHeroBubbleText();
+  initProjectMap();
+
+  window.addEventListener('resize', scheduleFitHeroBubbleText);
+  window.addEventListener('load', scheduleFitHeroBubbleText);
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(scheduleFitHeroBubbleText);
+  }
+</script>
+</body>
+</html>
