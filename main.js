@@ -23,6 +23,13 @@
   ];
   let closeOpenMapPopup = null;
 
+  function flashPopupCard(card) {
+    if (!card) return;
+    card.classList.remove('is-shimmering');
+    void card.offsetWidth;
+    card.classList.add('is-shimmering');
+  }
+
   function initProjectMap() {
     const mapRoot = document.getElementById('world-map');
     const legendItems = Array.from(document.querySelectorAll('.legend-item[data-project-id]'));
@@ -71,30 +78,42 @@
         clearTimeout(markerResetTimers.get(marker));
       }
 
+      const markerEl = marker.getElement();
+      if (markerEl) {
+        markerEl.classList.remove('is-pulsing');
+        void markerEl.getBoundingClientRect();
+        markerEl.classList.add('is-pulsing');
+      }
+
       marker.setStyle({ radius: 9.5, weight: 2.35 });
       const resetTimer = setTimeout(() => {
         if (map.hasLayer(marker)) marker.setStyle({ radius: 8, weight: 2 });
+        if (markerEl) markerEl.classList.remove('is-pulsing');
         markerResetTimers.delete(marker);
-      }, 180);
+      }, 980);
       markerResetTimers.set(marker, resetTimer);
 
-      [0, 120].forEach((delay, index) => {
+      [
+        { delay: 0, radius: 10, weight: 2.1, fillOpacity: 0.09, className: 'map-marker-pulse-ring' },
+        { delay: 140, radius: 10.5, weight: 1.8, fillOpacity: 0.06, className: 'map-marker-pulse-ring is-delayed' },
+        { delay: 40, radius: 12, weight: 1.2, fillOpacity: 0.03, className: 'map-marker-pulse-ring is-soft' }
+      ].forEach((config) => {
         const ring = L.circleMarker(marker.getLatLng(), {
-          radius: 10,
+          radius: config.radius,
           color: '#E07A5F',
-          weight: 2,
+          weight: config.weight,
           fillColor: '#E07A5F',
-          fillOpacity: 0.08,
+          fillOpacity: config.fillOpacity,
           opacity: 0.85,
           interactive: false,
           bubblingMouseEvents: false,
-          className: `map-marker-pulse-ring${index ? ' is-delayed' : ''}`
+          className: config.className
         }).addTo(map);
 
-        if (delay) {
+        if (config.delay) {
           const applyDelay = () => {
             const ringEl = ring.getElement();
-            if (ringEl) ringEl.style.animationDelay = `${delay}ms`;
+            if (ringEl) ringEl.style.animationDelay = `${config.delay}ms`;
           };
           applyDelay();
           requestAnimationFrame(applyDelay);
@@ -102,7 +121,7 @@
 
         setTimeout(() => {
           if (map.hasLayer(ring)) map.removeLayer(ring);
-        }, 1150 + delay);
+        }, 1380 + config.delay);
       });
     }
 
@@ -127,9 +146,13 @@
         }
       );
       marker.on('click', () => setLegendState(project.id));
-      marker.on('popupopen', () => {
+      marker.on('popupopen', (event) => {
         setLegendState(project.id);
         pulseMarker(marker);
+        const popupCard = event.popup && event.popup.getElement()
+          ? event.popup.getElement().querySelector('.liquid-popup-card')
+          : null;
+        flashPopupCard(popupCard);
       });
       markerById.set(project.id, marker);
     });
@@ -141,14 +164,9 @@
       const projectId = button.dataset.projectId;
       setLegendState(projectId);
 
-      // Trigger shimmer on popup card, then scroll after a beat
       const card = button.closest('.liquid-popup-card');
-      if (card) {
-        card.classList.remove('is-shimmering');
-        void card.offsetWidth;
-        card.classList.add('is-shimmering');
-      }
-      setTimeout(() => scrollToProject(projectId), 450);
+      flashPopupCard(card);
+      setTimeout(() => scrollToProject(projectId), 220);
     });
 
     legendItems.forEach((item) => {
@@ -196,6 +214,275 @@
           el.appendChild(line);
         });
       });
+  }
+
+  function pauseProjectVideo(iframe) {
+    if (!iframe || !iframe.contentWindow) return;
+
+    iframe.contentWindow.postMessage(
+      JSON.stringify({
+        event: 'command',
+        func: 'pauseVideo',
+        args: []
+      }),
+      '*'
+    );
+  }
+
+  const projectVideoBridges = [];
+  let projectVideoBridgeReady = false;
+  let projectVideoBridgeCounter = 0;
+
+  function parseProjectVideoMessage(data) {
+    if (!data) return null;
+
+    if (typeof data === 'string') {
+      try {
+        return JSON.parse(data);
+      } catch (error) {
+        return null;
+      }
+    }
+
+    return typeof data === 'object' ? data : null;
+  }
+
+  function getProjectVideoState(message) {
+    if (!message || typeof message !== 'object') return null;
+
+    if (message.event === 'onStateChange' && typeof message.info === 'number') {
+      return message.info;
+    }
+
+    if (
+      message.event === 'infoDelivery' &&
+      message.info &&
+      typeof message.info.playerState === 'number'
+    ) {
+      return message.info.playerState;
+    }
+
+    return null;
+  }
+
+  function ensureProjectVideoBridge() {
+    if (projectVideoBridgeReady) return;
+    projectVideoBridgeReady = true;
+
+    window.addEventListener('message', (event) => {
+      let hostname = '';
+
+      try {
+        hostname = new URL(event.origin).hostname;
+      } catch (error) {
+        return;
+      }
+
+      if (!hostname.includes('youtube.com') && !hostname.includes('youtube-nocookie.com')) {
+        return;
+      }
+
+      const message = parseProjectVideoMessage(event.data);
+      const state = getProjectVideoState(message);
+      if (state === null) return;
+
+      const bridge = projectVideoBridges.find(
+        (entry) => entry.iframe.contentWindow === event.source
+      );
+      if (!bridge) return;
+
+      bridge.onStateChange(state);
+    });
+  }
+
+  function registerProjectVideoBridge(iframe, onStateChange) {
+    if (!iframe) return;
+
+    ensureProjectVideoBridge();
+
+    const existingBridge = projectVideoBridges.find((entry) => entry.iframe === iframe);
+    if (existingBridge) {
+      existingBridge.onStateChange = onStateChange;
+      return;
+    }
+
+    projectVideoBridgeCounter += 1;
+    const playerId = iframe.dataset.projectVideoId || `project-video-${projectVideoBridgeCounter}`;
+    iframe.dataset.projectVideoId = playerId;
+
+    projectVideoBridges.push({ iframe, onStateChange });
+
+    const subscribeToStateChanges = () => {
+      if (!iframe.contentWindow) return;
+
+      iframe.contentWindow.postMessage(
+        JSON.stringify({
+          event: 'listening',
+          id: playerId
+        }),
+        '*'
+      );
+
+      iframe.contentWindow.postMessage(
+        JSON.stringify({
+          event: 'command',
+          func: 'addEventListener',
+          args: ['onStateChange'],
+          id: playerId
+        }),
+        '*'
+      );
+    };
+
+    iframe.addEventListener('load', () => {
+      setTimeout(subscribeToStateChanges, 160);
+      setTimeout(subscribeToStateChanges, 900);
+    });
+
+    setTimeout(subscribeToStateChanges, 220);
+    setTimeout(subscribeToStateChanges, 1100);
+  }
+
+  function initProjectMediaCarousels() {
+    const carousels = Array.from(document.querySelectorAll('[data-carousel]'));
+
+    carousels.forEach((carousel) => {
+      const slides = Array.from(carousel.querySelectorAll('[data-media-slide]'));
+      if (!slides.length) return;
+
+      let activeIndex = slides.findIndex((slide) => slide.classList.contains('is-active'));
+      if (activeIndex < 0) activeIndex = 0;
+
+      const status = carousel.querySelector('.project-media-status');
+      const card = carousel.closest('.project-card');
+      const noteShell = card ? card.querySelector('[data-carousel-note-shell]') : null;
+      if (status && noteShell && !noteShell.classList.contains('is-inline')) {
+        noteShell.classList.add('is-inline');
+        status.appendChild(noteShell);
+      }
+      const noteToggle = noteShell ? noteShell.querySelector('[data-carousel-note-toggle]') : null;
+      const note = card ? card.querySelector('[data-carousel-note]') : null;
+      const noteDescription = note ? note.querySelector('[data-carousel-description]') : null;
+      const noteCredit = note ? note.querySelector('[data-carousel-credit]') : null;
+      const statusKind = carousel.querySelector('[data-carousel-kind]');
+      const statusCount = carousel.querySelector('[data-carousel-count]');
+
+      const setVideoOverlayPlaying = (isPlaying) => {
+        carousel.classList.toggle('is-video-playing', isPlaying);
+        if (status) {
+          status.setAttribute('aria-hidden', String(isPlaying));
+        }
+        if (isPlaying) {
+          setNoteOpen(false);
+        }
+      };
+
+      const setNoteOpen = (isOpen) => {
+        if (!noteShell || !noteToggle) return;
+        noteShell.classList.toggle('is-open', isOpen);
+        noteToggle.setAttribute('aria-expanded', String(isOpen));
+      };
+
+      slides.forEach((slide) => {
+        const iframe = slide.querySelector('iframe');
+        if (!iframe) return;
+
+        registerProjectVideoBridge(iframe, (state) => {
+          const isActiveVideoSlide =
+            slide === slides[activeIndex] && slide.dataset.mediaType === 'video';
+          if (!isActiveVideoSlide) return;
+
+          if (state === 1) {
+            setVideoOverlayPlaying(true);
+          } else if (state === 0 || state === 2 || state === 5) {
+            setVideoOverlayPlaying(false);
+          }
+        });
+      });
+
+      const renderSlide = (nextIndex, shouldPausePrevious = true) => {
+        const normalizedIndex = (nextIndex + slides.length) % slides.length;
+        const previousSlide = slides[activeIndex];
+        const activeSlide = slides[normalizedIndex];
+
+        if (shouldPausePrevious && previousSlide && previousSlide !== activeSlide) {
+          pauseProjectVideo(previousSlide.querySelector('iframe'));
+        }
+
+        slides.forEach((slide, index) => {
+          const isActive = index === normalizedIndex;
+          slide.classList.toggle('is-active', isActive);
+          slide.setAttribute('aria-hidden', String(!isActive));
+        });
+
+        activeIndex = normalizedIndex;
+        setVideoOverlayPlaying(false);
+
+        if (activeSlide.dataset.mediaType === 'video') {
+          setNoteOpen(false);
+        }
+
+        if (statusKind) {
+          statusKind.textContent =
+            (activeSlide.dataset.mediaType === 'image'
+              ? activeSlide.dataset.mediaDescription
+              : activeSlide.dataset.mediaLabel) ||
+            activeSlide.dataset.mediaDescription ||
+            'Medium';
+        }
+        if (statusCount) {
+          statusCount.textContent = `${normalizedIndex + 1} / ${slides.length}`;
+        }
+
+        if (note) {
+          note.dataset.mediaType = activeSlide.dataset.mediaType || '';
+        }
+        if (noteDescription) {
+          noteDescription.textContent = activeSlide.dataset.mediaDescription || '';
+        }
+        if (noteCredit) {
+          const credit = activeSlide.dataset.mediaCredit || '';
+          noteCredit.textContent = credit;
+          noteCredit.hidden = !credit;
+        }
+      };
+
+      const prevButton = carousel.querySelector('[data-carousel-prev]');
+      const nextButton = carousel.querySelector('[data-carousel-next]');
+
+      if (prevButton) {
+        prevButton.addEventListener('click', () => renderSlide(activeIndex - 1));
+      }
+      if (nextButton) {
+        nextButton.addEventListener('click', () => renderSlide(activeIndex + 1));
+      }
+
+      if (noteToggle) {
+        noteToggle.addEventListener('click', () => {
+          const isOpen = !noteShell.classList.contains('is-open');
+          setNoteOpen(isOpen);
+        });
+      }
+
+      carousel.addEventListener('keydown', (event) => {
+        if (event.key === 'ArrowLeft') {
+          event.preventDefault();
+          renderSlide(activeIndex - 1);
+        } else if (event.key === 'ArrowRight') {
+          event.preventDefault();
+          renderSlide(activeIndex + 1);
+        } else if (event.key === 'i' || event.key === 'I') {
+          if (noteToggle) {
+            event.preventDefault();
+            const isOpen = !noteShell.classList.contains('is-open');
+            setNoteOpen(isOpen);
+          }
+        }
+      });
+
+      setNoteOpen(false);
+      renderSlide(activeIndex, false);
+    });
   }
 
   let heroBubbleFitRaf = null;
@@ -254,16 +541,69 @@
   if (pf) po.observe(pf);
 
   let highlightTimer = 0;
+  let highlightWatchRaf = 0;
+  let highlightWatchToken = 0;
+  function triggerProjectHighlight(el) {
+    clearTimeout(highlightTimer);
+    el.classList.remove('is-highlighted');
+    void el.offsetWidth;
+    el.classList.add('is-highlighted');
+    highlightTimer = setTimeout(() => el.classList.remove('is-highlighted'), 2600);
+  }
   function scrollToProject(id) {
     const el = document.getElementById(id);
     if (el) {
       if (typeof closeOpenMapPopup === 'function') closeOpenMapPopup();
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      clearTimeout(highlightTimer);
-      el.classList.remove('is-highlighted');
-      void el.offsetWidth;
-      el.classList.add('is-highlighted');
-      highlightTimer = setTimeout(() => el.classList.remove('is-highlighted'), 3500);
+      const isMobile = window.matchMedia('(max-width: 767px)').matches;
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const rect = el.getBoundingClientRect();
+      const topOffset = isMobile ? 72 : 92;
+      const maxScroll = Math.max(
+        0,
+        document.documentElement.scrollHeight - window.innerHeight
+      );
+      const targetY = Math.max(
+        0,
+        Math.min(maxScroll, window.scrollY + rect.top - topOffset)
+      );
+      const travel = Math.abs(window.scrollY - targetY);
+      const maxWait = reduceMotion
+        ? 0
+        : Math.min(isMobile ? 980 : 760, Math.max(240, Math.round(travel * (isMobile ? 0.62 : 0.48))));
+
+      highlightWatchToken += 1;
+      if (highlightWatchRaf) {
+        cancelAnimationFrame(highlightWatchRaf);
+        highlightWatchRaf = 0;
+      }
+
+      window.scrollTo({ top: targetY, behavior: reduceMotion ? 'auto' : 'smooth' });
+
+      if (reduceMotion) {
+        triggerProjectHighlight(el);
+        return;
+      }
+
+      const watchToken = highlightWatchToken;
+      const startedAt = performance.now();
+      let settledFrames = 0;
+
+      const watchScrollLanding = () => {
+        if (watchToken !== highlightWatchToken) return;
+
+        const distance = Math.abs(window.scrollY - targetY);
+        settledFrames = distance <= 4 ? settledFrames + 1 : 0;
+
+        if (settledFrames >= 2 || performance.now() - startedAt >= maxWait) {
+          highlightWatchRaf = 0;
+          triggerProjectHighlight(el);
+          return;
+        }
+
+        highlightWatchRaf = requestAnimationFrame(watchScrollLanding);
+      };
+
+      highlightWatchRaf = requestAnimationFrame(watchScrollLanding);
     }
   }
 
@@ -286,6 +626,7 @@
   }
 
   applySentenceStackLayout();
+  initProjectMediaCarousels();
   scheduleFitHeroBubbleText();
   initProjectMap();
 
