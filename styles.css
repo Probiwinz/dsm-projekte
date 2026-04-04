@@ -1722,7 +1722,7 @@
       max-width: 100%;
       padding: 0.2rem 0.15rem 0.35rem;
     }
-    .hero-sub-line { max-width: none; }
+    .hero-sub-line { max-width: none; white-space: normal; overflow-wrap: break-word; }
     .hero-info-bubble {
       width: min(92vw, 42rem);
       max-width: calc(100% - 0.95rem);
