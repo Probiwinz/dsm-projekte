@@ -1827,8 +1827,7 @@
       justify-items: stretch;
     }
     .project-media-status-kind {
-      font-size: 0.7rem;
-      line-height: 1.28;
+      display: none;
     }
     .project-media-status-count {
       justify-self: end;
