@@ -1825,14 +1825,54 @@
       grid-template-columns: minmax(0, 1fr) auto auto;
       gap: 0.45rem;
       justify-items: stretch;
+      transition: padding 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+                  gap 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .project-media-status:has(.project-media-note-shell.is-open) {
+      padding: 0.58rem 0.72rem 0.52rem;
+      gap: 0.5rem;
     }
     .project-media-status-kind {
+      max-height: 0;
+      overflow: hidden;
+      opacity: 0;
       font-size: 0.7rem;
       line-height: 1.28;
+      transition: max-height 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+                  opacity 0.28s ease;
+    }
+    .project-media-status:has(.project-media-note-shell.is-open) .project-media-status-kind {
+      max-height: 5rem;
+      opacity: 1;
     }
     .project-media-status-count {
       justify-self: end;
       font-size: 0.64rem;
+    }
+    /* Strip card styling from note panel — integrate into blurry status bar */
+    .project-media-status .project-media-note {
+      background: none;
+      border: none;
+      box-shadow: none;
+      backdrop-filter: none;
+      padding: 0.1rem 0 0;
+      border-radius: 0;
+      gap: 0.15rem;
+    }
+    .project-media-status .project-media-note::before,
+    .project-media-status .project-media-note::after { display: none; }
+    /* Hide redundant label + description text (description shown in status-kind) */
+    .project-media-status .project-media-note-label,
+    .project-media-status .project-media-note-text { display: none; }
+    /* Copyright as plain small text inside the blurry bar */
+    .project-media-status .project-media-note-credit {
+      color: rgba(255,255,255,0.65);
+      font-size: 0.63rem;
+      line-height: 1.3;
+    }
+    /* Reduced max-height — only copyright line remains */
+    .project-media-note-shell.is-open .project-media-note-region {
+      max-height: 2.5rem;
     }
     .project-visual {
       height: auto;
