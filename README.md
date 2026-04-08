@@ -98,4 +98,8 @@ Alle Projektinformationen stammen von der offiziellen Website der Deutschen Stif
 
 ## Lizenz
 
-© 2025 – Schulprojekt – Made with ❤️ by [Probiwinz](https://github.com/Probiwinz)
+Der Quellcode dieses Projekts (HTML, CSS, JavaScript) steht unter der [MIT License](./LICENSE).
+
+**Ausnahme – Bildmaterial:** Die Bilder im Verzeichnis `images/` stammen von der [Deutschen Stiftung Meeresschutz](https://www.stiftung-meeresschutz.org) und ihren Projektpartnern bzw. Fotografen. Sie unterliegen dem jeweiligen Urheberrecht und sind **nicht** Bestandteil der MIT-Lizenz. Eine Nutzung dieser Bilder bedarf der Genehmigung der jeweiligen Rechteinhaber.
+
+Made with ❤️ by [Probiwinz](https://github.com/Probiwinz)
