@@ -1905,9 +1905,14 @@
     }
     /* Hide "Mehr Informationen" toggle on mobile while the video slide is active.
        The note only points to the YouTube source, which adds no value and takes
-       significant space on small screens. On image slides the toggle reappears. */
-    .project-media-status .project-media-note-shell.is-video-slide {
-      display: none;
+       significant space on small screens. On image slides the toggle reappears.
+       Because .is-inline sets `display: contents` on the shell, we must also hide
+       the toggle and region directly — otherwise they remain as grid items of
+       the status bar. */
+    .project-media-note-shell.is-video-slide,
+    .project-media-note-shell.is-video-slide .project-media-note-toggle,
+    .project-media-note-shell.is-video-slide .project-media-note-region {
+      display: none !important;
     }
     .project-visual {
       height: auto;
