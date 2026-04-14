@@ -362,6 +362,7 @@
       }
       const noteToggle = noteShell ? noteShell.querySelector('[data-carousel-note-toggle]') : null;
       const note = card ? card.querySelector('[data-carousel-note]') : null;
+      const mobileViewportQuery = window.matchMedia('(max-width: 767px)');
       const noteDescription = note ? note.querySelector('[data-carousel-description]') : null;
       const noteCredit = note ? note.querySelector('[data-carousel-credit]') : null;
       const statusKind = carousel.querySelector('[data-carousel-kind]');
@@ -381,6 +382,20 @@
         if (!noteShell || !noteToggle) return;
         noteShell.classList.toggle('is-open', isOpen);
         noteToggle.setAttribute('aria-expanded', String(isOpen));
+      };
+
+      const updateNoteToggleVisibility = () => {
+        if (!noteToggle || !slides.length) return;
+
+        const activeSlide = slides[activeIndex] || slides[0];
+        const shouldHideNoteToggle =
+          mobileViewportQuery.matches && activeSlide && activeSlide.dataset.mediaType === 'video';
+
+        noteToggle.hidden = shouldHideNoteToggle;
+
+        if (shouldHideNoteToggle) {
+          setNoteOpen(false);
+        }
       };
 
       slides.forEach((slide) => {
@@ -437,6 +452,8 @@
         if (note) {
           note.dataset.mediaType = activeSlide.dataset.mediaType || '';
         }
+
+        updateNoteToggleVisibility();
         if (noteDescription) {
           noteDescription.textContent = activeSlide.dataset.mediaDescription || '';
         }
@@ -462,6 +479,12 @@
           const isOpen = !noteShell.classList.contains('is-open');
           setNoteOpen(isOpen);
         });
+      }
+
+      if (typeof mobileViewportQuery.addEventListener === 'function') {
+        mobileViewportQuery.addEventListener('change', updateNoteToggleVisibility);
+      } else if (typeof mobileViewportQuery.addListener === 'function') {
+        mobileViewportQuery.addListener(updateNoteToggleVisibility);
       }
 
       carousel.addEventListener('keydown', (event) => {
