@@ -1333,6 +1333,19 @@
     color: var(--text-dark);
     line-height: 1.55;
   }
+  .infobox-link {
+    color: var(--ocean-mid);
+    text-decoration: underline;
+    text-decoration-color: rgba(27, 73, 101, 0.4);
+    text-underline-offset: 2px;
+    font-weight: 600;
+    transition: color 0.2s ease, text-decoration-color 0.2s ease;
+  }
+  .infobox-link:hover,
+  .infobox-link:focus-visible {
+    color: var(--coral);
+    text-decoration-color: var(--coral);
+  }
 
   /* ============ PATTERN SECTION ============ */
   .pattern-section {
@@ -1889,6 +1902,12 @@
     /* Reduced max-height — only copyright line remains */
     .project-media-note-shell.is-open .project-media-note-region {
       max-height: 2.5rem;
+    }
+    /* Hide "Mehr Informationen" toggle on mobile while the video slide is active.
+       The note only points to the YouTube source, which adds no value and takes
+       significant space on small screens. On image slides the toggle reappears. */
+    .project-media-status .project-media-note-shell.is-video-slide {
+      display: none;
     }
     .project-visual {
       height: auto;

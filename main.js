@@ -437,6 +437,12 @@
         if (note) {
           note.dataset.mediaType = activeSlide.dataset.mediaType || '';
         }
+        if (noteShell) {
+          noteShell.classList.toggle(
+            'is-video-slide',
+            activeSlide.dataset.mediaType === 'video'
+          );
+        }
         if (noteDescription) {
           noteDescription.textContent = activeSlide.dataset.mediaDescription || '';
         }
